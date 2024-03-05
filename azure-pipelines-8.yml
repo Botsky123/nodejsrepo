@@ -5,14 +5,11 @@ resources:
 - repo: self
 
 variables:
-  # Container registry service connection established during pipeline creation
   dockerRegistryServiceConnection: '3e3bebed-d23f-4e91-8bc7-7636382225c8'
   imageRepository: 'botskynodejsrepo'
   containerRegistry: 'testcontainerregistrydemo.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
   tag: '$(Build.BuildId)'
-
-  # Agent VM image name
   vmImageName: 'ubuntu-latest'
 
 stages:
@@ -33,21 +30,21 @@ stages:
         tags: |
           $(tag)
     
-    # Insert Trivy installation here
+    # Replace with manual installation steps for Trivy
     - script: |
-        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
-      displayName: 'Install Trivy'
+        wget https://github.com/aquasecurity/trivy/releases/download/v0.49.1/trivy_0.49.1_Linux-64bit.tar.gz
+        tar zxvf trivy_0.49.1_Linux-64bit.tar.gz
+        sudo mv trivy /usr/local/bin
+      displayName: 'Manually Install Trivy v0.49.1'
     
     - script: |
         trivy --version
       displayName: 'Verify Trivy Installation'  
       
-    # Insert Trivy scan here. Use the built image name and tag.
     - script: |
         trivy image --exit-code 1 --severity HIGH,CRITICAL $(containerRegistry)/$(imageRepository):$(tag)
       displayName: 'Scan image with Trivy'
       
-    # If Trivy scan passes, proceed to push the image to ACR
     - task: Docker@2
       displayName: Push an image to container registry
       inputs:
