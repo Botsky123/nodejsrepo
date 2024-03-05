@@ -37,6 +37,10 @@ stages:
     - script: |
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
       displayName: 'Install Trivy'
+    
+    - script: |
+        trivy --version
+      displayName: 'Verify Trivy Installation'  
       
     # Insert Trivy scan here. Use the built image name and tag.
     - script: |
