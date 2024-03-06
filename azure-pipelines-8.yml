@@ -30,26 +30,10 @@ stages:
         tags: |
           $(tag)
     
-    # Replace with manual installation steps for Trivy
-    - script: |
-        wget https://github.com/aquasecurity/trivy/releases/download/v0.49.1/trivy_0.49.1_Linux-64bit.tar.gz
-        tar zxvf trivy_0.49.1_Linux-64bit.tar.gz
-        sudo mv trivy /usr/local/bin
-      displayName: 'Manually Install Trivy v0.49.1'
-    
-    - script: |
-        trivy --version
-      displayName: 'Verify Trivy Installation'  
-      
-    - script: |
-        trivy image --exit-code 1 --severity HIGH,CRITICAL $(containerRegistry)/$(imageRepository):$(tag)
-      displayName: 'Scan image with Trivy'
-      
-    - task: Docker@2
-      displayName: Push an image to container registry
+    - task: CmdLine@2
+      displayName: Scan
       inputs:
-        command: push
-        repository: $(imageRepository)
-        containerRegistry: $(dockerRegistryServiceConnection)
-        tags: |
-          $(tag)
+        script: |
+         docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/Library/Caches:/root/.cache/ aquasec/trivy --exit-code 0 --severity MEDIUM,HIGH --ignore-unfixed $(containerRegistry)/$(imageRepository):$(tag)
+         
+         docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/Library/Caches:/root/.cache/ aquasec/trivy --exit-code 1 --severity CRITICAL --ignore-unfixed $(containerRegistry)/$(imageRepository):$(tag)
