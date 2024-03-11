@@ -31,12 +31,12 @@ stages:
     - script: |
         AGENT_IP=$(curl -s http://ifconfig.me)
         echo "Detected Agent IP: $AGENT_IP"
-        docker build -t $(imageRepository):$(tag) -f $(dockerfilePath) .
         docker save -o image.tar $(imageRepository):$(tag)
-        ./clair-scanner --clair="${clairServerUrl}" --ip="$AGENT_IP" --reportAll=true --log=debug --reportPath=clair-report.json image.tar || true
+        ./clair-scanner --clair="${clairServerUrl}" --ip="$AGENT_IP" --reportAll=true --log=debug --reportPath=clair-report.json --threshold="Negligible" $(imageRepository):$(tag) || true
       displayName: 'Scan Docker image with clair-scanner'
       env:
         DOCKER_BUILDKIT: 1
+
 
     - script: |
         if [ -f clair-report.json ]; then
