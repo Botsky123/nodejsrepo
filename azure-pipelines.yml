@@ -10,7 +10,7 @@ resources:
 
 variables:
   # Container registry service connection established during pipeline creation
-  dockerRegistryServiceConnection: '048ab52b-d3c8-40e1-8189-711ff24747c2'
+  dockerRegistryServiceConnection: 'docker_registry'
   imageRepository: 'botskynodejsrepo'
   containerRegistry: 'testcontainerregistrydemo.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
