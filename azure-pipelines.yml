@@ -37,7 +37,6 @@ stages:
       env:
         DOCKER_BUILDKIT: 1
 
-
     - script: |
         if [ -f clair-report.json ]; then
             if grep -q "High" clair-report.json; then
