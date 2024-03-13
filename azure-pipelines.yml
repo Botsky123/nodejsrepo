@@ -5,56 +5,42 @@ resources:
 - repo: self
 
 variables:
-  dockerRegistryServiceConnection: 'docker_registry'
+  dockerRegistryServiceConnection: 'f72c71d4-2ffc-446a-b59f-a6588784a86b'
   imageRepository: 'botskynodejsrepo'
   containerRegistry: 'testcontainerregistrydemo.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
   tag: '$(Build.BuildId)'
   vmImageName: 'ubuntu-latest'
-  clairServerUrl: 'http://172.208.88.203:6060'
+  imageName: '$(containerRegistry)/$(imageRepository):$(tag)'
 
 stages:
 - stage: Build
-  displayName: Build and push stage
+  displayName: "Build and scan stage"
   jobs:
   - job: Build
-    displayName: Build
+    displayName: "Build and scan job"
     pool:
       vmImage: $(vmImageName)
     steps:
-    - script: |
-        wget https://github.com/arminc/clair-scanner/releases/download/v12/clair-scanner_linux_amd64
-        mv clair-scanner_linux_amd64 clair-scanner
-        chmod +x clair-scanner
-      displayName: 'Install clair-scanner'
-
-    - script: |
-        AGENT_IP=$(curl -s http://ifconfig.me)
-        echo "Detected Agent IP: $AGENT_IP"
-        docker save -o image.tar $(imageRepository):$(tag)
-        ./clair-scanner --clair="${clairServerUrl}" --ip="$AGENT_IP" --reportAll=true --log=debug --reportPath=clair-report.json --threshold="Negligible" $(imageRepository):$(tag) || true
-      displayName: 'Scan Docker image with clair-scanner'
-      env:
-        DOCKER_BUILDKIT: 1
-
-    - script: |
-        if [ -f clair-report.json ]; then
-            if grep -q "High" clair-report.json; then
-              echo "High vulnerabilities found, failing build"
-              exit 1
-            else
-              echo "No high vulnerabilities found. Proceeding with build."
-            fi
-        else
-            echo "clair-report.json does not exist, check Clair scanner configuration."
-            exit 1
-        fi
-      displayName: 'Check for vulnerabilities'
-
     - task: Docker@2
-      displayName: Build and push an image to container registry
+      displayName: 'Build an image'
       inputs:
-        command: buildAndPush
+        command: build
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        tags: |
+          $(tag)
+
+    - script: |
+        docker run --name clair-scanner --network=host --rm -v /var/run/docker.sock:/var/run/docker.sock arminc/clair-scanner:latest --clair="http://172.208.88.203:6060" --ip="10.0.0.5" $(imageName)
+      displayName: 'Scan image with Clair'
+      env:
+        imageName: $(imageName)
+      
+    - task: Docker@2
+      displayName: 'Push an image to container registry'
+      inputs:
+        command: push
         repository: $(imageRepository)
         dockerfile: $(dockerfilePath)
         containerRegistry: $(dockerRegistryServiceConnection)
